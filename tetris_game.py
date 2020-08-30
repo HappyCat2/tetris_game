@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import sys, random
-from PyQt5.QtWidgets import QMainWindow, QFrame, QDesktopWidget, QApplication, QHBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QBasicTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtWidgets import QMainWindow, QFrame, QDesktopWidget, QApplication, QHBoxLayout, QLabel, QWidget
+from PyQt5.QtCore import Qt, QBasicTimer, pyqtSignal, QDateTime
+from PyQt5.QtGui import QPainter, QColor, QGuiApplication, QScreen
 
 from tetris_model import BOARD_DATA, Shape
 from tetris_ai import TETRIS_AI
+
 
 # TETRIS_AI = None
 
@@ -23,7 +24,7 @@ class Tetris(QMainWindow):
 
     def initUI(self):
         self.gridSize = 22
-        self.speed = 10
+        self.speed = 200
 
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
@@ -87,7 +88,10 @@ class Tetris(QMainWindow):
     def timerEvent(self, event):
         if event.timerId() == self.timer.timerId():
             if TETRIS_AI and not self.nextMove:
-                self.nextMove = TETRIS_AI.nextMove()
+                # only use the "fake AI" here
+                # Comment by jingdong on 2020-08-29 11:14:15
+                # self.nextMove = TETRIS_AI.nextMove()
+                # print("timer")
             if self.nextMove:
                 k = 0
                 while BOARD_DATA.currentDirection != self.nextMove[0] and k < 4:
@@ -110,17 +114,27 @@ class Tetris(QMainWindow):
         else:
             super(Tetris, self).timerEvent(event)
 
+    def save_screen(self):
+        screen = QGuiApplication.primaryScreen()
+        strdate = QDateTime.currentDateTime().toString("yyyy-MM-dd hh-mm-ss-zzz");
+        str = "img"
+        str += strdate
+        str += ".jpg"
+        if not screen.grabWindow(self.winId()).save(str):
+            print("write error %s" % str)
+
     def keyPressEvent(self, event):
         if not self.isStarted or BOARD_DATA.currentShape == Shape.shapeNone:
             super(Tetris, self).keyPressEvent(event)
             return
 
         key = event.key()
-        
+
         if key == Qt.Key_P:
             self.pause()
+            self.save_screen()
             return
-            
+
         if self.isPaused:
             return
         elif key == Qt.Key_Left:
@@ -208,7 +222,7 @@ class Board(QFrame):
 
         # Draw a border
         painter.setPen(QColor(0x777777))
-        painter.drawLine(self.width()-1, 0, self.width()-1, self.height())
+        painter.drawLine(self.width() - 1, 0, self.width() - 1, self.height())
         painter.setPen(QColor(0xCCCCCC))
         painter.drawLine(self.width(), 0, self.width(), self.height())
 
